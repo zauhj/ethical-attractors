@@ -1,18 +1,9 @@
-"""Overlay plot for ABM and RL cooperation curves (final).
-
-See paper for details. Produces Figure 5.
-"""
-import json
-import matplotlib.pyplot as plt
-
-#!/usr/bin/env python3
 """Generate RL cooperation bar chart for the manuscript.
 
 Reads the most recent JSON output produced by rl.py in ../analysis/rl/ and
 creates rl_coop_bar.png in ../analysis/figures/ . The figure matches the layout
 assumed in paper text (Payoff variants on x-axis, agent-TFT cooperation rate).
 """
-from __future__ import annotations
 
 import json
 import sys

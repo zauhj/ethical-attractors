@@ -3,21 +3,23 @@
 set -e
 cd "$(dirname "$0")"
 
-# ABM main run
-python3 code/abm.py --mode sync --seeds 30 --steps 800 --noise 0 --soft_k 4 --output analysis/abm/abm_sync.json
+# ABM (lattice) main run for cross-validation figure
+python3 code/abm.py --grid 64 64 --steps 800 --noise 0.005 --rule soft --soft-k 4 --output analysis/abm
 
-# ABM sweep
-python3 code/abm_sweep.py --output analysis/abm/abm_sweep.json
+# ABM parameter sweep (soft rule)
+python3 code/abm_sweep.py --output analysis/abm
 
-# RL run
-python3 code/rl.py --output analysis/rl/rl_results.json
+# RL run (produces analysis/rl/rl_*.json)
+python3 code/rl.py --output analysis/rl
 
-# RL cross-validation
-python3 code/plot_cross_validation.py --output analysis/figures/cross_validation.png
+# Graph ABM on Karate Club (baseline on real-world network)
+python3 code/abm_graph.py --graph karate --steps 800 --noise 0.005 --rule soft --soft-k 4 --output analysis/graph
 
-# Plot RL overlay
-python3 code/plot_rl.py --output analysis/figures/rl_coop_bar.png
+# Baseline plots
+python3 code/plot_rl.py
+python3 code/plot_cross_validation.py
+python3 code/plot_baselines.py
 
-# Copy best figures for paper
-cp analysis/figures/abm_logistic.png analysis/figures/abm_residual.png analysis/figures/abm_topology_compare.png analysis/figures/rl_coop_bar.png analysis/figures/cross_validation.png .
+# Copy final figures for manuscript
+cp analysis/figures/abm_topology_compare.png analysis/figures/rl_coop_bar.png analysis/figures/cross_validation.png .
 

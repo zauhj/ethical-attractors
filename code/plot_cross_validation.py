@@ -1,9 +1,4 @@
-"""Plot cross-validation results for RL/ABM (final).
 
-See paper for details. Produces Figure 6.
-"""
-import json
-import matplotlib.pyplot as plt
 
 #!/usr/bin/env python3
 """Generate cross-model convergence overlay (ABM vs RL).

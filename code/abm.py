@@ -67,6 +67,29 @@ def step_soft(state: np.ndarray, k: float, noise: float) -> np.ndarray:  # noqa:
     return next_state
 
 
+def step_voter(state: np.ndarray, noise: float) -> np.ndarray:  # noqa: D401
+    """Classical voter-model synchronous update on a 4-neighbour lattice.
+
+    Each site randomly samples one of its 4 neighbours and adopts its state.
+    Optional bit-flip noise applied after copying.
+    """
+    # Stack the four neighbour grids along a new axis (H, W, 4)
+    n_up = np.roll(state, 1, 0)
+    n_down = np.roll(state, -1, 0)
+    n_left = np.roll(state, 1, 1)
+    n_right = np.roll(state, -1, 1)
+    neigh_stack = np.stack([n_up, n_down, n_left, n_right], axis=2)
+    # Choose one neighbour per site uniformly at random
+    choice = np.random.randint(0, 4, size=state.shape)
+    h_idx = np.arange(state.shape[0])[:, None]
+    w_idx = np.arange(state.shape[1])[None, :]
+    next_state = neigh_stack[h_idx, w_idx, choice]
+    if noise > 0.0:
+        flip = np.random.rand(*state.shape) < noise
+        next_state = np.where(flip, 1 - next_state, next_state)
+    return next_state
+
+
 # -----------------------------------------------------------------------------
 # Simulation wrapper
 # -----------------------------------------------------------------------------
@@ -100,17 +123,30 @@ def simulate(
             )
             if rule == "strict":
                 new_val = 1 if neigh > 2 else 0 if neigh < 2 else sub
-            else:
+            elif rule == "soft":
                 p_c = 1.0 / (1.0 + np.exp(-soft_k * (neigh - 2.0)))
                 new_val = int(np.random.rand() < p_c)
+            else:  # voter
+                # pick a random neighbour and copy its state
+                r = np.random.randint(0, 4)
+                if r == 0:
+                    new_val = state[(i + 1) % grid[0], j]
+                elif r == 1:
+                    new_val = state[(i - 1) % grid[0], j]
+                elif r == 2:
+                    new_val = state[i, (j + 1) % grid[1]]
+                else:
+                    new_val = state[i, (j - 1) % grid[1]]
             if noise > 0.0 and np.random.rand() < noise:
                 new_val = 1 - new_val
             state[i, j] = new_val
         else:
             if rule == "strict":
                 state = step_strict(state, noise)
-            else:
+            elif rule == "soft":
                 state = step_soft(state, soft_k, noise)
+            else:  # voter
+                state = step_voter(state, noise)
         mu[t] = state.mean()
     return mu, state
 
@@ -144,7 +180,7 @@ def main() -> None:  # noqa: D401
     parser.add_argument("--steps", type=int, default=800)
     parser.add_argument("--init-coop", type=float, default=0.5)
     parser.add_argument("--noise", type=float, default=0.005)
-    parser.add_argument("--rule", choices=["strict", "soft"], default="soft")
+    parser.add_argument("--rule", choices=["strict", "soft", "voter"], default="soft")
     parser.add_argument("--soft-k", type=float, default=4.0)
     parser.add_argument("--async", dest="async_update", action="store_true")
     parser.add_argument("--seed", type=int, default=None, help="RNG seed for reproducibility")
