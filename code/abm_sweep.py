@@ -7,8 +7,6 @@ import argparse, json, random
 from pathlib import Path
 import numpy as np
 
-from __future__ import annotations
-
 import json
 import time
 from itertools import product
