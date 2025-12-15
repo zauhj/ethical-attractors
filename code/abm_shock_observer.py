@@ -18,6 +18,7 @@ def step_soft_theta(state: np.ndarray, k: float, noise: float, theta: float) -> 
     Reduces to the original rule from abm.step_soft when theta=2.0
     on a 4-neighbour lattice.
     """
+
     neigh = neighbour_sum(state)
     prob_coop = 1.0 / (1.0 + np.exp(-k * (neigh - theta)))
     next_state = (np.random.rand(*state.shape) < prob_coop).astype(np.int8)
@@ -131,7 +132,7 @@ def main() -> None:
     parser.add_argument("--intervene-len", type=int, default=50)
     parser.add_argument("--theta-base", type=float, default=2.0)
     parser.add_argument("--theta-intervene", type=float, default=2.0)
-    parser.add_argument("--seeds", type=int, default=32)
+    parser.add_argument("--seeds", type=int, default=8)
     args = parser.parse_args()
 
     grid = tuple(args.grid)
@@ -196,12 +197,14 @@ def main() -> None:
 
     plt.figure(figsize=(6, 4))
     plt.axvline(args.t_shock, color="#999999", linestyle=":", label="shock time")
+    plt.axhline(args.mu_min, color="#999999", linestyle="--", label="monitor threshold")
     plt.plot(t, mu_no, label="shock only", color="#4C72B0")
     plt.fill_between(t, mu_no - sem_no, mu_no + sem_no, color="#4C72B0", alpha=0.2)
     plt.plot(t, mu_obs, label="shock + observer", color="#DD8452", linestyle="--")
     plt.fill_between(t, mu_obs - sem_obs, mu_obs + sem_obs, color="#DD8452", alpha=0.2)
     plt.xlabel("step")
     plt.ylabel("mean cooperation")
+    plt.ylim(0.0, 1.0)
     plt.title("Shock recovery with/without observer intervention")
     plt.legend()
     plt.tight_layout()

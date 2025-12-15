@@ -30,11 +30,13 @@ def main() -> None:
     init = 0.5
     soft_k = 4.0
 
-    # Lattice runs
     grid = (64, 64)
     rules = ["strict", "soft", "voter"]
+
+    # Lattice runs
     lattice = {}
     for r in rules:
+        np.random.seed(42)
         mu, _ = simulate_lattice(grid, steps, init, noise, r, soft_k, async_update=False)
         lattice[r] = mu
 

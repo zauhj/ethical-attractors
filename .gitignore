@@ -42,3 +42,28 @@ ENV/
 
 # Logs
 *.log
+
+# Never commit manuscripts / PDFs
+*.pdf
+
+# Local run outputs (keep repo tidy)
+analysis/**
+code/analysis/**
+!analysis/figures/
+!analysis/figures/.keep
+!analysis/figures/abm_logistic.png
+!analysis/figures/abm_residual.png
+!analysis/figures/abm_topology_compare.png
+!analysis/figures/async_compare.png
+!analysis/figures/cross_validation.png
+!analysis/figures/rl_coop_bar.png
+!analysis/figures/shock_observer.png
+!analysis/figures/graphical_abstract.png
+
+# Ignore any additional/dated figure variants that are produced during runs
+analysis/figures/*_[0-9]*.png
+
+# Convenience copies created by reproduce.sh (avoid duplicate files at repo root)
+abm_topology_compare.png
+cross_validation.png
+rl_coop_bar.png

@@ -54,7 +54,7 @@ def main() -> None:
     parser.add_argument("--noise", type=float, default=0.005)
     parser.add_argument("--rule", choices=["strict", "soft", "voter"], default="soft")
     parser.add_argument("--soft-k", type=float, default=4.0)
-    parser.add_argument("--seeds", type=int, default=32)
+    parser.add_argument("--seeds", type=int, default=8)
     args = parser.parse_args()
 
     grid = tuple(args.grid)
@@ -77,6 +77,7 @@ def main() -> None:
 
     ts = time.strftime("%Y%m%d-%H%M%S")
     json_path = ANALYSIS_DIR / f"async_compare_{ts}.json"
+
     import json
 
     with json_path.open("w") as fp:

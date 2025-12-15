@@ -27,9 +27,15 @@ def main() -> None:
     with latest.open() as fp:
         data = json.load(fp)
 
-    variants = data["variant"]
-    mean_agent_tft = np.array(data["mean_coop_agent_tft"], dtype=float)
-    se_agent_tft = np.array(data["mean_coop_opp_tft"], dtype=float) * 0  # placeholder, not used
+    if "summary" in data:
+        summary = data["summary"]
+        variants = list(summary.keys())
+        mean_agent_tft = np.array([summary[v]["mean_agent_tft"] for v in variants], dtype=float)
+        se_agent_tft = np.array([summary[v]["std_agent_tft"] for v in variants], dtype=float)
+    else:
+        variants = data["variant"]
+        mean_agent_tft = np.array(data["mean_coop_agent_tft"], dtype=float)
+        se_agent_tft = np.zeros_like(mean_agent_tft)
 
     fig_dir = latest.parent.parent / "figures"
     fig_dir.mkdir(parents=True, exist_ok=True)
@@ -49,4 +55,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

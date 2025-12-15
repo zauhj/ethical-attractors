@@ -17,16 +17,18 @@ Outputs JSON summary of mean cooperation rates for each pairing.
 Designed for laptop-scale runtime (<30 s).
 """
 from __future__ import annotations
+
 import argparse
 import json
 import random
 import time
 from pathlib import Path
 from typing import List, Tuple
+
 import numpy as np
 
-
 Action = int  # 0=Cooperate, 1=Defect
+
 
 PAYOFF_VARIANTS = {
     "prosocial": (3, 2, 0, 1),
@@ -38,6 +40,7 @@ PAYOFF_VARIANTS = {
 
 class QAgent:
     """Tabular Q-learning with epsilon-greedy decay."""
+    """Tabular Q-learning with 1-step memory state."""
 
     def __init__(
         self,
@@ -53,9 +56,9 @@ class QAgent:
         self.eps_end = eps_end
         self.decay = decay
         self.steps = 0
-        # state: last joint action encoded 0..3 (CC, CD, DC, DD)
+        # state: last joint action encoded 0..3 (CC, CD, DC, DD).
         self.q = np.zeros((4, 2))
-        self.last_state = 0  # start with CC
+        self.last_state = 0  # start with CC (assume coop)
 
     def _eps(self) -> float:
         return max(self.eps_end, self.eps_start - self.decay * self.steps)
@@ -75,15 +78,15 @@ class QAgent:
 
 class Opponent:
     @staticmethod
-    def tft(history_self: list[Action], history_opp: list[Action]) -> Action:
+    def tft(history_self: List[Action], history_opp: List[Action]) -> Action:
         return 0 if not history_opp else history_opp[-1]
 
     @staticmethod
-    def random(_: list[Action], __: list[Action]) -> Action:
+    def random(_: List[Action], __: List[Action]) -> Action:
         return random.randint(0, 1)
 
 
-def ipd_step(a: Action, b: Action, variant: tuple[int, int, int, int]) -> tuple[float, float]:
+def ipd_step(a: Action, b: Action, variant: Tuple[int, int, int, int]) -> Tuple[float, float]:
     R, T, S, P = variant
     if a == 0 and b == 0:
         return R, R
@@ -103,11 +106,11 @@ def simulate(
     horizon: int,
     agent: QAgent,
     opp_policy,
-    variant: tuple[int, int, int, int],
-) -> tuple[float, float]:
+    variant: Tuple[int, int, int, int],
+) -> Tuple[float, float]:
     coop_agent, coop_opp = 0, 0
-    history_a: list[Action] = []
-    history_b: list[Action] = []
+    history_a: List[Action] = []
+    history_b: List[Action] = []
     a_last, b_last = 0, 0  # start with CC
     for _ in range(episodes):
         agent.last_state = encode_state(a_last, b_last)
@@ -131,10 +134,13 @@ def main() -> None:
     p.add_argument("--episodes", type=int, default=5000)
     p.add_argument("--horizon", type=int, default=10)
     p.add_argument("--seeds", type=int, default=3)
-    p.add_argument("--output", type=str, default="../analysis/rl")
+    p.add_argument("--output", type=str, default="analysis/rl")
     args = p.parse_args()
 
     out_dir = Path(args.output)
+    if not out_dir.is_absolute():
+        ROOT = Path(__file__).resolve().parent.parent
+        out_dir = ROOT / out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
     ts = time.strftime("%Y%m%d-%H%M%S")
     json_path = out_dir / f"rl_{ts}.json"
@@ -142,6 +148,16 @@ def main() -> None:
     variants = list(PAYOFF_VARIANTS.keys())
     coop_agent_tft, coop_opp_tft = [], []
     coop_agent_rand, coop_opp_rand = [], []
+
+    agent_hparams = {
+        "alpha": float(QAgent().alpha),
+        "gamma": float(QAgent().gamma),
+        "eps_start": float(QAgent().eps_start),
+        "eps_end": float(QAgent().eps_end),
+        "eps_decay": float(QAgent().decay),
+        "eps_schedule": "linear_per_step_clamped",
+        "eps_formula": "eps=max(eps_end, eps_start - eps_decay*steps)",
+    }
 
     random.seed(42)
     np.random.seed(42)
@@ -167,9 +183,12 @@ def main() -> None:
         json.dump(
             {
                 "variant": variants,
+                "payoff_variants": PAYOFF_VARIANTS,
                 "episodes": args.episodes,
                 "horizon": args.horizon,
                 "seeds": args.seeds,
+                "rng_seed": 42,
+                "agent_hparams": agent_hparams,
                 "mean_coop_agent_tft": coop_agent_tft,
                 "mean_coop_opp_tft": coop_opp_tft,
                 "mean_coop_agent_rand": coop_agent_rand,
@@ -183,4 +202,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -21,10 +21,10 @@ import numpy as np
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 
+
 # -----------------------------------------------------------------------------
 # Utility functions
 # -----------------------------------------------------------------------------
-
 
 def logistic(t: np.ndarray, k: float, t50: float, mu_inf: float) -> np.ndarray:  # noqa: D401
     """Three-parameter logistic curve µ(t) = µ_inf / (1 + exp(-k (t - t50)))."""
@@ -108,44 +108,44 @@ def simulate(
     state = (np.random.rand(*grid) < init_coop).astype(np.int8)
     mu = np.empty(steps + 1)
     mu[0] = state.mean()
-
+    h, w = grid
+    n_sites = int(h * w)
     for t in range(1, steps + 1):
         if async_update:
-            # pick one random site and update it; others stay
-            i = np.random.randint(0, grid[0])
-            j = np.random.randint(0, grid[1])
-            sub = state[i, j]
-            neigh = (
-                state[(i + 1) % grid[0], j]
-                + state[(i - 1) % grid[0], j]
-                + state[i, (j + 1) % grid[1]]
-                + state[i, (j - 1) % grid[1]]
-            )
-            if rule == "strict":
-                new_val = 1 if neigh > 2 else 0 if neigh < 2 else sub
-            elif rule == "soft":
-                p_c = 1.0 / (1.0 + np.exp(-soft_k * (neigh - 2.0)))
-                new_val = int(np.random.rand() < p_c)
-            else:  # voter
-                # pick a random neighbour and copy its state
-                r = np.random.randint(0, 4)
-                if r == 0:
-                    new_val = state[(i + 1) % grid[0], j]
-                elif r == 1:
-                    new_val = state[(i - 1) % grid[0], j]
-                elif r == 2:
-                    new_val = state[i, (j + 1) % grid[1]]
-                else:
-                    new_val = state[i, (j - 1) % grid[1]]
-            if noise > 0.0 and np.random.rand() < noise:
-                new_val = 1 - new_val
-            state[i, j] = new_val
+            for _ in range(n_sites):
+                i = np.random.randint(0, h)
+                j = np.random.randint(0, w)
+                sub = state[i, j]
+                neigh = (
+                    state[(i + 1) % h, j]
+                    + state[(i - 1) % h, j]
+                    + state[i, (j + 1) % w]
+                    + state[i, (j - 1) % w]
+                )
+                if rule == "strict":
+                    new_val = 1 if neigh > 2 else 0 if neigh < 2 else int(sub)
+                elif rule == "soft":
+                    p_c = 1.0 / (1.0 + np.exp(-soft_k * (neigh - 2.0)))
+                    new_val = int(np.random.rand() < p_c)
+                else:  # voter
+                    r = np.random.randint(0, 4)
+                    if r == 0:
+                        new_val = int(state[(i + 1) % h, j])
+                    elif r == 1:
+                        new_val = int(state[(i - 1) % h, j])
+                    elif r == 2:
+                        new_val = int(state[i, (j + 1) % w])
+                    else:
+                        new_val = int(state[i, (j - 1) % w])
+                if noise > 0.0 and np.random.rand() < noise:
+                    new_val = 1 - new_val
+                state[i, j] = new_val
         else:
             if rule == "strict":
                 state = step_strict(state, noise)
             elif rule == "soft":
                 state = step_soft(state, soft_k, noise)
-            else:  # voter
+            else:
                 state = step_voter(state, noise)
         mu[t] = state.mean()
     return mu, state
@@ -184,7 +184,8 @@ def main() -> None:  # noqa: D401
     parser.add_argument("--soft-k", type=float, default=4.0)
     parser.add_argument("--async", dest="async_update", action="store_true")
     parser.add_argument("--seed", type=int, default=None, help="RNG seed for reproducibility")
-    parser.add_argument("--output", type=str, default="../analysis/abm")
+    parser.add_argument("--output", type=str, default="analysis/abm")
+    parser.add_argument("--diag", action="store_true")
     parser.add_argument("--no-fig", action="store_true")
     args = parser.parse_args()
 
@@ -202,7 +203,11 @@ def main() -> None:  # noqa: D401
     )
     r2, (k_hat, t50_hat, mu_inf_hat) = fit_logistic(mu)
 
+    # ensure dirs
     out_base = Path(args.output)
+    if not out_base.is_absolute():
+        ROOT = Path(__file__).resolve().parent.parent
+        out_base = ROOT / out_base
     out_base.mkdir(parents=True, exist_ok=True)
     ts = time.strftime("%Y%m%d-%H%M%S")
     json_path = out_base / f"abm_{ts}.json"
@@ -216,6 +221,7 @@ def main() -> None:  # noqa: D401
                 "rule": args.rule,
                 "soft_k": args.soft_k,
                 "async": args.async_update,
+                "seed": args.seed,
                 "r2": r2,
                 "k_hat": k_hat,
                 "t50_hat": t50_hat,
@@ -244,6 +250,26 @@ def main() -> None:  # noqa: D401
     plt.savefig(fig_path)
     plt.close()
     print(f"[ABM] figure saved to {fig_path}")
+
+    deterministic = fig_path.parent / "abm_logistic.png"
+    deterministic.write_bytes(fig_path.read_bytes())
+
+    if args.diag and np.isfinite(r2):
+        resid_path = out_base.parent / "figures" / f"abm_residual_{ts}.png"
+        resid = mu - logistic(t, k_hat, t50_hat, mu_inf_hat)
+        plt.figure(figsize=(6, 3))
+        plt.plot(t, resid)
+        plt.axhline(0.0, color="black", lw=1)
+        plt.xlabel("step")
+        plt.ylabel("residual")
+        plt.title("Residual diagnostics")
+        plt.tight_layout()
+        plt.savefig(resid_path)
+        plt.close()
+        print(f"[ABM] residual plot saved to {resid_path}")
+
+        resid_det = resid_path.parent / "abm_residual.png"
+        resid_det.write_bytes(resid_path.read_bytes())
 
 
 if __name__ == "__main__":
