@@ -1,6 +1,8 @@
 # Ethical Attractors: Universal Patterns of Cooperation
 
-This repository contains the full reproducible code, figures, and manuscript for the "Ethical Attractors" project. It is ready for direct push to GitHub and for archival.
+This repository contains the reproducible code and figure-generation pipeline for the "Ethical Attractors" project.
+
+The manuscript (PDF/LaTeX sources) is intentionally not included here.
 
 ## Contents
 - `code/` — All Python source code for ABM, RL, and figure generation

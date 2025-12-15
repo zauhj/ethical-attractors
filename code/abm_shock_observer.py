@@ -18,6 +18,7 @@ def step_soft_theta(state: np.ndarray, k: float, noise: float, theta: float) -> 
     Reduces to the original rule from abm.step_soft when theta=2.0
     on a 4-neighbour lattice.
     """
+
     neigh = neighbour_sum(state)
     prob_coop = 1.0 / (1.0 + np.exp(-k * (neigh - theta)))
     next_state = (np.random.rand(*state.shape) < prob_coop).astype(np.int8)

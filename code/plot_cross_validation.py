@@ -1,5 +1,3 @@
-
-
 #!/usr/bin/env python3
 """Generate cross-model convergence overlay (ABM vs RL).
 
@@ -29,14 +27,14 @@ FIG_DIR = ROOT / "analysis" / "figures"
 
 
 def load_latest_json(directory: Path, pattern: str) -> Path:
-    files = sorted(directory.glob(pattern))
+    files = list(directory.glob(pattern))
     if not files:
         sys.exit(f"[plot_cross_validation] no files matching {pattern} in {directory}")
-    return files[-1]
+    return max(files, key=lambda p: p.stat().st_mtime)
 
 
 def main() -> None:
-    abm_json = load_latest_json(ABM_DIR, "abm_*.json")
+    abm_json = load_latest_json(ABM_DIR, "abm_[0-9]*.json")
     rl_json = load_latest_json(RL_DIR, "rl_*.json")
 
     # ABM data
@@ -48,13 +46,19 @@ def main() -> None:
     # RL data – take prosocial variant (index 0 by convention)
     with rl_json.open() as fp:
         rl_data = json.load(fp)
-    try:
-        variant_names = rl_data["variant"]
-        mean_tft = rl_data["mean_coop_agent_tft"]
-        idx = variant_names.index("prosocial")
-    except (KeyError, ValueError):
-        sys.exit("[plot_cross_validation] prosocial variant not found in RL json")
-    rl_mean = float(mean_tft[idx])
+    if "summary" in rl_data:
+        try:
+            rl_mean = float(rl_data["summary"]["prosocial"]["mean_agent_tft"])
+        except KeyError:
+            sys.exit("[plot_cross_validation] prosocial variant not found in RL json")
+    else:
+        try:
+            variant_names = rl_data["variant"]
+            mean_tft = rl_data["mean_coop_agent_tft"]
+            idx = variant_names.index("prosocial")
+            rl_mean = float(mean_tft[idx])
+        except (KeyError, ValueError):
+            sys.exit("[plot_cross_validation] prosocial variant not found in RL json")
 
     # Plot
     FIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -78,4 +82,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

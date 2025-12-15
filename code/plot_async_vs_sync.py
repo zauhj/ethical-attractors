@@ -77,6 +77,7 @@ def main() -> None:
 
     ts = time.strftime("%Y%m%d-%H%M%S")
     json_path = ANALYSIS_DIR / f"async_compare_{ts}.json"
+
     import json
 
     with json_path.open("w") as fp:
