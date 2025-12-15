@@ -10,7 +10,7 @@ python3 code/abm.py --grid 64 64 --steps 800 --noise 0.005 --rule soft --soft-k 
 python3 code/abm_sweep.py --output analysis/abm
 
 # Async vs sync comparison (lattice)
-python3 code/plot_async_vs_sync.py
+python3 code/plot_async_vs_sync.py --seeds 8
 
 # RL run (produces analysis/rl/rl_*.json)
 python3 code/rl.py --output analysis/rl
@@ -24,7 +24,7 @@ python3 code/plot_cross_validation.py
 python3 code/plot_baselines.py
 
 # Shock + observer intervention experiment (lattice)
-python3 code/abm_shock_observer.py
+python3 code/abm_shock_observer.py --seeds 8
 
 python3 code/plot_graphical_abstract.py
 

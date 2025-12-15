@@ -54,7 +54,7 @@ def main() -> None:
     parser.add_argument("--noise", type=float, default=0.005)
     parser.add_argument("--rule", choices=["strict", "soft", "voter"], default="soft")
     parser.add_argument("--soft-k", type=float, default=4.0)
-    parser.add_argument("--seeds", type=int, default=32)
+    parser.add_argument("--seeds", type=int, default=8)
     args = parser.parse_args()
 
     grid = tuple(args.grid)

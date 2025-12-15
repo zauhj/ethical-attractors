@@ -149,6 +149,16 @@ def main() -> None:
     coop_agent_tft, coop_opp_tft = [], []
     coop_agent_rand, coop_opp_rand = [], []
 
+    agent_hparams = {
+        "alpha": float(QAgent().alpha),
+        "gamma": float(QAgent().gamma),
+        "eps_start": float(QAgent().eps_start),
+        "eps_end": float(QAgent().eps_end),
+        "eps_decay": float(QAgent().decay),
+        "eps_schedule": "linear_per_step_clamped",
+        "eps_formula": "eps=max(eps_end, eps_start - eps_decay*steps)",
+    }
+
     random.seed(42)
     np.random.seed(42)
 
@@ -173,9 +183,12 @@ def main() -> None:
         json.dump(
             {
                 "variant": variants,
+                "payoff_variants": PAYOFF_VARIANTS,
                 "episodes": args.episodes,
                 "horizon": args.horizon,
                 "seeds": args.seeds,
+                "rng_seed": 42,
+                "agent_hparams": agent_hparams,
                 "mean_coop_agent_tft": coop_agent_tft,
                 "mean_coop_opp_tft": coop_opp_tft,
                 "mean_coop_agent_rand": coop_agent_rand,

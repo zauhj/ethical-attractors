@@ -221,6 +221,7 @@ def main() -> None:  # noqa: D401
                 "rule": args.rule,
                 "soft_k": args.soft_k,
                 "async": args.async_update,
+                "seed": args.seed,
                 "r2": r2,
                 "k_hat": k_hat,
                 "t50_hat": t50_hat,
